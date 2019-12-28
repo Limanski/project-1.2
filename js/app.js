@@ -1,65 +1,55 @@
-var Board;
-const Player1 = 'X';
-const Puter = 'O';
-const isWin = [
-    [0, 1, 2],
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8], 
-    [6, 4, 2]
-]
+const winningCombos = [
+    [0,1,2],
+    [3,4,5],
+    [6,7,8],
+    [0,4,8],
+    [2,4,6],
+    [0,3,6],
+    [1,4,7],
+    [2,5,8]
+];
 
-const cells = document.querySelectorAll('.cell');
+const grid = () => Array.from(document.getElementsByClassName('q'));
+const qNumId = (qEl) => Number.parseInt(qEl.id.replace('q', ''));
+const emptyQs = () => grid().filter(_qEl => _qEl.innerText === '');
+const allSame = (arr) => arr.every(_qEl => _qEl.innerText === arr[0].innerText && _qEl.innerText !== ''); 
 
+const takeTurn = (index, letter) => grid()[index].innerText = letter;
+const opponentChoice = () => qNumId(emptyQs()[Math.floor(Math.random() * emptyQs().length)]);
 
-startGame = () => {
-    document.querySelector(".endGame").style.display = 'none';
-    board = Array.from(Array(9).keys());
-    for (i = 0; i < cells.length; i++) {
-        cells[i].innerText = '';
-        cells[i].style.removeProperty('background-color');
-        cells[i].addEventListener('click', turn, false);
-    }
-}
-
-turn = (square) => {
-    if(typeof board[square.tartget.id] == 'number') {
-         
-    }
-    play(square.target.id, Player1)
-    if ( checkTie()) play(bestMove(), Puter);
-} 
-
-play = (squareId, player) => {
-    board[squareId] = player;
-    document.getElementById(squareId).innerText = player;
-    let gameWon = checkWinner(board, player)
-    if (gameWon) gameOver(gameWon)
-}
-
-checkWinner = (board, player) => {
-    let plays = board.reduce((a, e, i) => 
-        (e === player) ? a.concat(i) : a, []);
-    let gameWon = null;
-    for (let [index, win] of isWin.entries()) {
-        if (win.every(elem => plays.indexOf(elem) > -1)) {
-            gameWon = {index: index, player: player};
-            break;
+const endGame = (winningSequence) => { 
+    winningSequence.forEach(_qEl => _qEl.classList.add('winner'));
+    disableListeners();
+};
+const checkForVictory = () => {
+    let victory = false;
+    winningCombos.forEach(_c => {
+        const _grid = grid();
+        const sequence = [_grid[_c[0]], _grid[_c[1]], _grid[_c[2]]];
+        if(allSame(sequence)) {
+            victory = true;
+            endGame(sequence);
         }
-    }
-return gameWon;
+    });
+    return victory;
+};
+
+const opponentTurn = () => {
+    disableListeners();
+    setTimeout(() => {
+        takeTurn(opponentChoice(), 'o');
+        if(!checkForVictory())
+            enableListeners();
+    }, 1000); 
 }
 
-gameOver = (gameWon) => {
-    for (let index of isWin [gameWon.index]) {
-        document.getElementById(index).style.backgroundColor = gameWon.player == Player1 ? "green" : "orange";
-    }
-    for (i = 0; i < cells.length; i++) {
-        cells[i].removeEventListener('click',turn, false)
-    }
-}
+const clickFn = ($event) => {
+    takeTurn(qNumId($event.target), 'x');
+    if(!checkForVictory())
+        opponentTurn();
+};
 
-startGame();
+const enableListeners = () => grid().forEach(_qEl => _qEl.addEventListener('click', clickFn));
+const disableListeners = () => grid().forEach(_qEl => _qEl.removeEventListener('click', clickFn));
+
+enableListeners();
